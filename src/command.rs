@@ -21,20 +21,16 @@ pub enum Command {
     ColumnAddressHigh(u8),
     /// Set page address
     PageAddress(Page),
-    /// Set display start line from 0-63
+    /// Set display start line from 0-127
     StartLine(u8),
     /// Reverse columns from 127-0
     SegmentRemap(bool),
-    /// Set multipex ratio from 15-63 (MUX-1)
+    /// Set multipex ratio from 1-127 (MUX-1)
     Multiplex(u8),
     /// Scan from COM[n-1] to COM0 (where N is mux ratio)
     ReverseComDir(bool),
     /// Set vertical shift
     DisplayOffset(u8),
-    /// Setup com hardware configuration
-    /// First value indicates sequential (false) or alternative (true)
-    /// pin configuration.
-    ComPinConfig(bool),
     /// Set up display clock.
     /// First value is oscillator frequency, increasing with higher value
     /// Second value is divide ratio - 1
@@ -64,12 +60,11 @@ impl Command {
             Command::ColumnAddressLow(addr) => ([0xF & addr, 0, 0, 0, 0, 0, 0], 1),
             Command::ColumnAddressHigh(addr) => ([0x10 | (0xF & addr), 0, 0, 0, 0, 0, 0], 1),
             Command::PageAddress(page) => ([0xB0 | (page as u8), 0, 0, 0, 0, 0, 0], 1),
-            Command::StartLine(line) => ([0x40 | (0x3F & line), 0, 0, 0, 0, 0, 0], 1),
+            Command::StartLine(line) => ([0b11011100 , line, 0, 0, 0, 0, 0], 2),
             Command::SegmentRemap(remap) => ([0xA0 | (remap as u8), 0, 0, 0, 0, 0, 0], 1),
             Command::Multiplex(ratio) => ([0xA8, ratio, 0, 0, 0, 0, 0], 2),
             Command::ReverseComDir(rev) => ([0xC0 | ((rev as u8) << 3), 0, 0, 0, 0, 0, 0], 1),
             Command::DisplayOffset(offset) => ([0xD3, offset, 0, 0, 0, 0, 0], 2),
-            Command::ComPinConfig(alt) => ([0xDA, 0x02 | ((alt as u8) << 4), 0, 0, 0, 0, 0], 2),
             Command::DisplayClockDiv(fosc, div) => {
                 ([0xD5, ((0xF & fosc) << 4) | (0xF & div), 0, 0, 0, 0, 0], 2)
             }
@@ -77,7 +72,7 @@ impl Command {
                 [0xD9, ((0xF & phase2) << 4) | (0xF & phase1), 0, 0, 0, 0, 0],
                 2,
             ),
-            Command::VcomhDeselect(level) => ([0xDB, (level as u8) << 4, 0, 0, 0, 0, 0], 2),
+            Command::VcomhDeselect(level) => ([0xDB, level as u8, 0, 0, 0, 0, 0], 2),
             Command::Noop => ([0xE3, 0, 0, 0, 0, 0, 0], 1),
             Command::ChargePump(en) => ([0xAD, 0x8A | (en as u8), 0, 0, 0, 0, 0], 2),
         };
@@ -175,11 +170,11 @@ pub enum NFrames {
 #[allow(dead_code)]
 pub enum VcomhLevel {
     /// 0.65 * Vcc
-    V065 = 0b001,
+    V065 = 0b0010000,
     /// 0.77 * Vcc
-    V077 = 0b010,
+    V077 = 0b0100000,
     /// 0.83 * Vcc
-    V083 = 0b011,
+    V083 = 0b0110000,
     /// Auto
-    Auto = 0b100,
+    Auto = 0b1000000,
 }

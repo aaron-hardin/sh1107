@@ -54,7 +54,8 @@ where
         // TODO: combine with match below
         match self.display_size {
             DisplaySize::Display64x128 => Command::DisplayOffset(0x60).send(&mut self.iface),
-            DisplaySize::Display128x32
+            DisplaySize::Display128x128
+            | DisplaySize::Display128x32
             | DisplaySize::Display128x64
             | DisplaySize::Display128x64NoOffset
             | DisplaySize::Display132x64 => Command::DisplayOffset(0).send(&mut self.iface),
@@ -66,14 +67,6 @@ where
         Command::ChargePump(true).send(&mut self.iface)?;
 
         self.set_rotation(display_rotation)?;
-
-        match self.display_size {
-            DisplaySize::Display128x32 => Command::ComPinConfig(false).send(&mut self.iface),
-            DisplaySize::Display64x128
-            | DisplaySize::Display128x64
-            | DisplaySize::Display128x64NoOffset
-            | DisplaySize::Display132x64 => Command::ComPinConfig(true).send(&mut self.iface),
-        }?;
 
         Command::Contrast(0x80).send(&mut self.iface)?;
         Command::PreChargePeriod(0x1, 0xF).send(&mut self.iface)?;

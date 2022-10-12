@@ -22,7 +22,7 @@ use crate::{
     mode::displaymode::DisplayModeTrait, properties::DisplayProperties, Error,
 };
 
-const BUFFER_SIZE: usize = 132 * 64 / 8;
+const BUFFER_SIZE: usize = 128 * 128 / 8;
 
 /// Graphics mode handler
 pub struct GraphicsMode<DI>
@@ -169,40 +169,60 @@ where
 
 #[cfg(feature = "graphics")]
 use embedded_graphics::{
-    drawable,
-    geometry::Size,
-    pixelcolor::{
-        raw::{RawData, RawU1},
-        BinaryColor,
-    },
-    DrawTarget,
+    draw_target::DrawTarget,
+    geometry::{Dimensions, OriginDimensions, Size},
+    pixelcolor::BinaryColor,
+    Pixel,
 };
 
 #[cfg(feature = "graphics")]
-impl<DI> DrawTarget<BinaryColor> for GraphicsMode<DI>
+impl<DI> DrawTarget for GraphicsMode<DI>
 where
     DI: DisplayInterface,
 {
-    type Error = DI::Error;
-
-    fn draw_pixel(&mut self, pixel: drawable::Pixel<BinaryColor>) -> Result<(), Self::Error> {
-        let drawable::Pixel(pos, color) = pixel;
-
-        // Guard against negative values. All positive i32 values from `pos` can be represented in
-        // the `u32`s that `set_pixel()` accepts...
-        if pos.x < 0 || pos.y < 0 {
-            return Ok(());
-        }
-
-        // ... which makes the `as` coercions here safe.
-        self.set_pixel(pos.x as u32, pos.y as u32, RawU1::from(color).into_inner());
+    type Color = BinaryColor;
+    type Error = core::convert::Infallible;
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Pixel<Self::Color>>,
+    {
+        let bb = self.bounding_box();
+        pixels
+            .into_iter()
+            .filter(|Pixel(pos, _color)| bb.contains(*pos))
+            .for_each(|Pixel(pos, color)| {
+                self.set_pixel(pos.x as u32, pos.y as u32, color.is_on().into())
+            });
 
         Ok(())
     }
 
-    fn size(&self) -> Size {
+    fn clear(&mut self, color: BinaryColor) -> Result<(), Self::Error> {
+        match color {
+            BinaryColor::On => {
+                self.buffer = [0xFF; BUFFER_SIZE];
+            }
+            BinaryColor::Off => {
+                self.buffer = [0; BUFFER_SIZE];
+            }
+        }
+        Ok(())
+    }
+
+    /*fn size(&self) -> Size {
         let (w, h) = self.get_dimensions();
 
         Size::new(w as u32, h as u32)
+    }*/
+}
+
+#[cfg(feature = "graphics")]
+impl<DI> OriginDimensions for GraphicsMode<DI>
+where
+    DI: DisplayInterface,
+{
+    fn size(&self) -> Size {
+        let (w, h) = self.get_dimensions();
+        Size::new(w.into(), h.into())
     }
 }

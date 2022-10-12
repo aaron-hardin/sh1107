@@ -3,6 +3,8 @@
 /// Display size enumeration
 #[derive(Clone, Copy)]
 pub enum DisplaySize {
+    /// 128 by 128 pixels
+    Display128x128,
     /// 64 by 128 pixels
     Display64x128,
     /// 128 by 64 pixels
@@ -19,6 +21,7 @@ impl DisplaySize {
     /// Get integral dimensions from DisplaySize
     pub fn dimensions(self) -> (u8, u8) {
         match self {
+            DisplaySize::Display128x128 => (128, 128),
             DisplaySize::Display64x128 => (64, 128),
             DisplaySize::Display128x64 => (128, 64),
             DisplaySize::Display128x64NoOffset => (128, 64),
@@ -30,6 +33,7 @@ impl DisplaySize {
     /// Get the panel column offset from DisplaySize
     pub fn column_offset(self) -> u8 {
         match self {
+            DisplaySize::Display128x128 => 0,
             DisplaySize::Display64x128 => 2,
             DisplaySize::Display128x64 => 2,
             DisplaySize::Display128x64NoOffset => 0,
